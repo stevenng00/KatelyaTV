@@ -91,8 +91,31 @@ export async function GET(request: Request) {
 
     try {
       // 增加并发搜索数量以提高结果数量，同时保持性能
-      const maxConcurrentSearches = 12; // 增加并发数量
-      const sitesToSearch = availableSites.slice(0, maxConcurrentSearches);
+      const maxConcurrentSearches = 20; // 大幅增加并发数量
+
+      // 优先搜索最可靠的站点（根据名称判断）
+      const prioritySites = availableSites.filter(site =>
+        site.name.includes('火鸟') ||
+        site.name.includes('量子') ||
+        site.name.includes('非凡') ||
+        site.name.includes('永久') ||
+        site.name.includes('百度') ||
+        site.name.includes('1080') ||
+        site.name.includes('360') ||
+        site.name.includes('CK') ||
+        site.name.includes('U酷') ||
+        site.name.includes('ikun')
+      );
+
+      const otherSites = availableSites.filter(site =>
+        !prioritySites.includes(site)
+      );
+
+      // 优先搜索可靠的站点，然后搜索其他站点
+      const sitesToSearch = [
+        ...prioritySites.slice(0, Math.min(15, prioritySites.length)),
+        ...otherSites.slice(0, maxConcurrentSearches - Math.min(15, prioritySites.length))
+      ];
 
       // 搜索所有可用的资源站（已根据用户设置动态过滤）
       // 使用 Promise.allSettled 来并行处理所有搜索请求
@@ -111,9 +134,9 @@ export async function GET(request: Request) {
         .flatMap(result => result.value);
 
       // 如果结果数量较少且还有剩余时间，尝试搜索更多站点
-      if (allResults.length < 50 && availableSites.length > maxConcurrentSearches) {
+      if (allResults.length < 100 && availableSites.length > maxConcurrentSearches) {
         try {
-          const remainingSites = availableSites.slice(maxConcurrentSearches, maxConcurrentSearches + 6);
+          const remainingSites = availableSites.slice(maxConcurrentSearches, maxConcurrentSearches + 15);
           const additionalPromises = remainingSites.map((site) =>
             searchFromApi(site, query).catch(error => {
               console.warn(`Additional search failed for site ${site.name}:`, error);

@@ -182,32 +182,46 @@ function SearchPageClient() {
       // 添加时间戳参数避免缓存问题
       const timestamp = Date.now();
 
-      // 优先使用 Node.js Runtime 以获得更多结果，回退到 Edge Runtime
+      // 优先使用激进搜索策略，然后回退到其他方法
       let response: Response;
       try {
         response = await fetch(
-          `/api/search/node?q=${encodeURIComponent(query.trim())}&t=${timestamp}`,
+          `/api/search/aggressive?q=${encodeURIComponent(query.trim())}&t=${timestamp}`,
           {
             headers: {
               ...headers,
               'Cache-Control': 'no-cache, no-store, must-revalidate'
             },
-            signal: AbortSignal.timeout(30000) // 30 秒超时
+            signal: AbortSignal.timeout(45000) // 45 秒超时
           }
         );
       } catch (error) {
-        // 如果 Node.js Runtime 超时，尝试 Edge Runtime
-        console.warn('Node.js runtime search failed, trying Edge runtime:', error);
-        response = await fetch(
-          `/api/search?q=${encodeURIComponent(query.trim())}&t=${timestamp}`,
-          {
-            headers: {
-              ...headers,
-              'Cache-Control': 'no-cache, no-store, must-revalidate'
-            },
-            signal: AbortSignal.timeout(12000) // 12 秒超时
-          }
-        );
+        console.warn('Aggressive search failed, trying Node.js runtime:', error);
+        try {
+          response = await fetch(
+            `/api/search/node?q=${encodeURIComponent(query.trim())}&t=${timestamp}`,
+            {
+              headers: {
+                ...headers,
+                'Cache-Control': 'no-cache, no-store, must-revalidate'
+              },
+              signal: AbortSignal.timeout(30000) // 30 秒超时
+            }
+          );
+        } catch (nodeError) {
+          // 如果 Node.js Runtime 也超时，尝试 Edge Runtime
+          console.warn('Node.js runtime search failed, trying Edge runtime:', nodeError);
+          response = await fetch(
+            `/api/search?q=${encodeURIComponent(query.trim())}&t=${timestamp}`,
+            {
+              headers: {
+                ...headers,
+                'Cache-Control': 'no-cache, no-store, must-revalidate'
+              },
+              signal: AbortSignal.timeout(12000) // 12 秒超时
+            }
+          );
+        }
       }
 
       const data = await response.json();

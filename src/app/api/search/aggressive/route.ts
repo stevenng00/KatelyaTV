@@ -5,10 +5,10 @@ import { addCorsHeaders, handleOptionsRequest } from '@/lib/cors';
 import { getStorage } from '@/lib/db';
 import { searchFromApi } from '@/lib/downstream';
 
-// 使用 Node.js Runtime 以获得更长的执行时间（60 秒）
+// 使用 Node.js Runtime 以获得更长的执行时间
 export const runtime = 'nodejs';
 
-// 处理OPTIONS预检请求（OrionTV客户端需要）
+// 处理OPTIONS预检请求
 export async function OPTIONS() {
   return handleOptionsRequest();
 }
@@ -45,30 +45,25 @@ export async function GET(request: Request) {
   }
 
   try {
-    // 检查是否明确要求包含成人内容（用于关闭过滤时的明确请求）
+    // 检查是否明确要求包含成人内容
     const includeAdult = searchParams.get('include_adult') === 'true';
 
     // 获取用户的成人内容过滤设置
-    let shouldFilterAdult = true; // 默认过滤
+    let shouldFilterAdult = true;
     if (userName) {
       try {
         const storage = getStorage();
         const userSettings = await storage.getUserSettings(userName);
-        // 如果用户设置存在且明确设为false，则不过滤；否则默认过滤
         shouldFilterAdult = userSettings?.filter_adult_content !== false;
       } catch (error) {
-        // 出错时默认过滤成人内容
         shouldFilterAdult = true;
       }
     }
 
-    // 根据用户设置和明确请求决定最终的过滤策略
     const finalShouldFilter = shouldFilterAdult || !includeAdult;
-
-    // 使用动态过滤方法，但不依赖缓存，实时获取设置
     const availableSites = finalShouldFilter
-      ? await getAvailableApiSites(true) // 过滤成人内容
-      : await getAvailableApiSites(false); // 不过滤成人内容
+      ? await getAvailableApiSites(true)
+      : await getAvailableApiSites(false);
 
     if (!availableSites || availableSites.length === 0) {
       const cacheTime = await getCacheTime();
@@ -85,9 +80,8 @@ export async function GET(request: Request) {
       return addCorsHeaders(response);
     }
 
-    // Node.js Runtime 有更长的超时时间，可以搜索更多源
-    // 分批处理以避免内存问题，但最大化并发
-    const batchSize = 20; // 每批处理20个站点
+    // 超激进搜索策略：分批并行处理所有站点
+    const batchSize = 25; // 每批25个站点
     const batches = [];
 
     for (let i = 0; i < availableSites.length; i += batchSize) {
@@ -97,32 +91,46 @@ export async function GET(request: Request) {
 
     let allResults: any[] = [];
 
-    // 并行处理所有批次
-    const batchPromises = batches.map(async (batch) => {
-      const batchPromises = batch.map((site) =>
-        searchFromApi(site, query).catch(error => {
-          console.warn(`Search failed for site ${site.name}:`, error);
-          return [];
-        })
+    // 并行处理所有批次，但限制同时运行的批次数
+    const maxConcurrentBatches = 3;
+    const batchPromises = [];
+
+    for (let i = 0; i < batches.length; i += maxConcurrentBatches) {
+      const currentBatches = batches.slice(i, i + maxConcurrentBatches);
+
+      const currentBatchPromises = currentBatches.map(async (batch) => {
+        const batchPromises = batch.map((site) =>
+          searchFromApi(site, query).catch(error => {
+            console.warn(`Search failed for site ${site.name}:`, error);
+            return [];
+          })
+        );
+
+        const batchResults = await Promise.allSettled(batchPromises);
+        return batchResults
+          .filter((result): result is PromiseFulfilledResult<any[]> => result.status === 'fulfilled')
+          .flatMap(result => result.value);
+      });
+
+      batchPromises.push(Promise.allSettled(currentBatchPromises));
+    }
+
+    // 等待所有批次完成
+    const allBatchResults = await Promise.allSettled(batchPromises);
+
+    allResults = allBatchResults
+      .filter((result): result is PromiseFulfilledResult<any[]> => result.status === 'fulfilled')
+      .flatMap(batchResult =>
+        batchResult.value
+          .filter((result): result is PromiseFulfilledResult<any[]> => result.status === 'fulfilled')
+          .flatMap(result => result.value)
       );
 
-      const batchResults = await Promise.allSettled(batchPromises);
-      return batchResults
-        .filter((result): result is PromiseFulfilledResult<any[]> => result.status === 'fulfilled')
-        .flatMap(result => result.value);
-    });
-
-    const batchResults = await Promise.allSettled(batchPromises);
-    allResults = batchResults
-      .filter((result): result is PromiseFulfilledResult<any[]> => result.status === 'fulfilled')
-      .flatMap(result => result.value);
-
-    // 所有结果都作为常规结果返回，因为成人内容源已经在源头被过滤掉了
     const cacheTime = await getCacheTime();
     const response = NextResponse.json(
       {
         regular_results: allResults,
-        adult_results: [] // 始终为空，因为成人内容在源头就被过滤了
+        adult_results: []
       },
       {
         headers: {
@@ -134,7 +142,7 @@ export async function GET(request: Request) {
     );
     return addCorsHeaders(response);
   } catch (error) {
-    console.error('Search API error:', error);
+    console.error('Aggressive search API error:', error);
     const response = NextResponse.json(
       {
         regular_results: [],
