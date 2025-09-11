@@ -182,22 +182,9 @@ function SearchPageClient() {
       // 添加时间戳参数避免缓存问题
       const timestamp = Date.now();
 
-      // 首先尝试 Edge Runtime API，如果超时则回退到 Node.js Runtime
+      // 优先使用 Node.js Runtime 以获得更多结果，回退到 Edge Runtime
       let response: Response;
       try {
-        response = await fetch(
-          `/api/search?q=${encodeURIComponent(query.trim())}&t=${timestamp}`,
-          {
-            headers: {
-              ...headers,
-              'Cache-Control': 'no-cache, no-store, must-revalidate'
-            },
-            signal: AbortSignal.timeout(12000) // 12 秒超时
-          }
-        );
-      } catch (error) {
-        // 如果 Edge Runtime 超时，尝试 Node.js Runtime
-        console.warn('Edge runtime search failed, trying Node.js runtime:', error);
         response = await fetch(
           `/api/search/node?q=${encodeURIComponent(query.trim())}&t=${timestamp}`,
           {
@@ -206,6 +193,19 @@ function SearchPageClient() {
               'Cache-Control': 'no-cache, no-store, must-revalidate'
             },
             signal: AbortSignal.timeout(30000) // 30 秒超时
+          }
+        );
+      } catch (error) {
+        // 如果 Node.js Runtime 超时，尝试 Edge Runtime
+        console.warn('Node.js runtime search failed, trying Edge runtime:', error);
+        response = await fetch(
+          `/api/search?q=${encodeURIComponent(query.trim())}&t=${timestamp}`,
+          {
+            headers: {
+              ...headers,
+              'Cache-Control': 'no-cache, no-store, must-revalidate'
+            },
+            signal: AbortSignal.timeout(12000) // 12 秒超时
           }
         );
       }

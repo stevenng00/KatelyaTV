@@ -90,11 +90,12 @@ export async function GET(request: Request) {
     const overallTimeoutId = setTimeout(() => overallController.abort(), 9000); // 留 1 秒缓冲
 
     try {
-      // 限制并发搜索数量以避免超时，优先搜索前几个源
-      const maxConcurrentSearches = 6; // 限制并发数量
+      // 增加并发搜索数量以提高结果数量，同时保持性能
+      const maxConcurrentSearches = 12; // 增加并发数量
       const sitesToSearch = availableSites.slice(0, maxConcurrentSearches);
 
       // 搜索所有可用的资源站（已根据用户设置动态过滤）
+      // 使用 Promise.allSettled 来并行处理所有搜索请求
       const searchPromises = sitesToSearch.map((site) =>
         searchFromApi(site, query).catch(error => {
           // 单个源失败不影响其他源
@@ -105,9 +106,31 @@ export async function GET(request: Request) {
 
       // 使用 Promise.allSettled 确保即使部分失败也能返回结果
       const searchResults = await Promise.allSettled(searchPromises);
-      const allResults = searchResults
+      let allResults = searchResults
         .filter((result): result is PromiseFulfilledResult<any[]> => result.status === 'fulfilled')
         .flatMap(result => result.value);
+
+      // 如果结果数量较少且还有剩余时间，尝试搜索更多站点
+      if (allResults.length < 50 && availableSites.length > maxConcurrentSearches) {
+        try {
+          const remainingSites = availableSites.slice(maxConcurrentSearches, maxConcurrentSearches + 6);
+          const additionalPromises = remainingSites.map((site) =>
+            searchFromApi(site, query).catch(error => {
+              console.warn(`Additional search failed for site ${site.name}:`, error);
+              return [];
+            })
+          );
+
+          const additionalResults = await Promise.allSettled(additionalPromises);
+          const additionalData = additionalResults
+            .filter((result): result is PromiseFulfilledResult<any[]> => result.status === 'fulfilled')
+            .flatMap(result => result.value);
+
+          allResults = [...allResults, ...additionalData];
+        } catch (error) {
+          console.warn('Additional search failed:', error);
+        }
+      }
 
       clearTimeout(overallTimeoutId);
 
