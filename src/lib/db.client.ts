@@ -74,11 +74,11 @@ interface UserCacheStore {
 }
 
 // ---- 常量 ----
-// 新的键名（KatelyaTV）与旧键名（MoonTV）保持向后兼容
-const PLAY_RECORDS_KEY = 'katelyatv_play_records';
-const FAVORITES_KEY = 'katelyatv_favorites';
-const SEARCH_HISTORY_KEY = 'katelyatv_search_history';
-const SKIP_CONFIGS_KEY = 'katelyatv_skip_configs';
+// 新的键名（LnogvxeTV）与旧键名（MoonTV）保持向后兼容
+const PLAY_RECORDS_KEY = 'lnogvxetv_play_records';
+const FAVORITES_KEY = 'lnogvxetv_favorites';
+const SEARCH_HISTORY_KEY = 'lnogvxetv_search_history';
+const SKIP_CONFIGS_KEY = 'lnogvxetv_skip_configs';
 const LEGACY_PLAY_RECORDS_KEY = 'moontv_play_records';
 const LEGACY_FAVORITES_KEY = 'moontv_favorites';
 const LEGACY_SEARCH_HISTORY_KEY = 'moontv_search_history';
@@ -1272,7 +1272,7 @@ export function subscribeToDataUpdates<T>(
   callback: (data: T) => void
 ): () => void {
   if (typeof window === 'undefined') {
-    return () => {};
+    return () => { };
   }
 
   const handleUpdate = (event: CustomEvent) => {

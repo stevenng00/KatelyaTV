@@ -34,7 +34,7 @@ function VersionDisplay() {
     <button
       onClick={() =>
         window.open(
-          process.env.NEXT_PUBLIC_REPO_URL || 'https://github.com/katelya77/KatelyaTV',
+          process.env.NEXT_PUBLIC_REPO_URL || 'https://github.com/katelya77/LnogvxeTV',
           '_blank'
         )
       }
@@ -43,13 +43,12 @@ function VersionDisplay() {
       <span className='font-mono'>v{CURRENT_VERSION}</span>
       {!isChecking && updateStatus !== UpdateStatus.FETCH_FAILED && (
         <div
-          className={`flex items-center gap-1.5 ${
-            updateStatus === UpdateStatus.HAS_UPDATE
+          className={`flex items-center gap-1.5 ${updateStatus === UpdateStatus.HAS_UPDATE
               ? 'text-yellow-600 dark:text-yellow-400'
               : updateStatus === UpdateStatus.NO_UPDATE
-              ? 'text-purple-600 dark:text-purple-400'
-              : ''
-          }`}
+                ? 'text-purple-600 dark:text-purple-400'
+                : ''
+            }`}
         >
           {updateStatus === UpdateStatus.HAS_UPDATE && (
             <>
