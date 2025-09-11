@@ -80,7 +80,7 @@ async function refreshRecordAndFavorites() {
     };
 
     for (const user of users) {
-      console.log(`开始处理用户: ${user}`);
+      console.log(`开始处理用户: ${user.username || user}`);
 
       // 播放记录
       try {
@@ -130,7 +130,7 @@ async function refreshRecordAndFavorites() {
 
         console.log(`播放记录处理完成: ${processedRecords}/${totalRecords}`);
       } catch (err) {
-        console.error(`获取用户播放记录失败 (${user}):`, err);
+        console.error(`获取用户播放记录失败 (${user.username || user}):`, err);
       }
 
       // 收藏
@@ -178,7 +178,7 @@ async function refreshRecordAndFavorites() {
 
         console.log(`收藏处理完成: ${processedFavorites}/${totalFavorites}`);
       } catch (err) {
-        console.error(`获取用户收藏失败 (${user}):`, err);
+        console.error(`获取用户收藏失败 (${user.username || user}):`, err);
       }
     }
 

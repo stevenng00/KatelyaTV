@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
     }
 
     const currentUsername = decodeURIComponent(auth);
-    
+
     // 检查是否为站长账户
     if (!isOwnerAccount(currentUsername)) {
       return NextResponse.json({ error: '权限不足' }, { status: 403 });
@@ -32,20 +32,34 @@ export async function GET(request: NextRequest) {
     const users: User[] = await storage.getAllUsers();
     const usersWithSettings = await Promise.all(
       users.map(async (user) => {
-        const settings = await storage.getUserSettings(user.username);
-        return {
-          username: user.username,
-          role: user.role || 'user',
-          created_at: user.created_at,
-          filter_adult_content: settings?.filter_adult_content ?? true,
-          can_disable_filter: settings?.can_disable_filter ?? true,
-          managed_by_admin: settings?.managed_by_admin ?? false,
-          last_filter_change: settings?.last_filter_change
-        };
+        try {
+          const settings = await storage.getUserSettings(user.username);
+          return {
+            username: user.username || '',
+            role: user.role || 'user',
+            created_at: user.created_at || '',
+            filter_adult_content: settings?.filter_adult_content ?? true,
+            can_disable_filter: settings?.can_disable_filter ?? true,
+            managed_by_admin: settings?.managed_by_admin ?? false,
+            last_filter_change: settings?.last_filter_change || undefined
+          };
+        } catch (error) {
+          console.warn(`Failed to get settings for user ${user.username}:`, error);
+          // Return safe defaults if settings fetch fails
+          return {
+            username: user.username || '',
+            role: user.role || 'user',
+            created_at: user.created_at || '',
+            filter_adult_content: true,
+            can_disable_filter: true,
+            managed_by_admin: false,
+            last_filter_change: undefined
+          };
+        }
       })
     );
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       users: usersWithSettings,
       total: usersWithSettings.length
     });
@@ -65,7 +79,7 @@ export async function POST(request: NextRequest) {
     }
 
     const currentUsername = decodeURIComponent(auth);
-    
+
     // 检查是否为站长账户
     if (!isOwnerAccount(currentUsername)) {
       return NextResponse.json({ error: '权限不足' }, { status: 403 });
@@ -83,12 +97,12 @@ export async function POST(request: NextRequest) {
           ...settings,
           last_filter_change: new Date().toISOString()
         };
-        
+
         await storage.setUserSettings(username, newSettings);
-        
-        return NextResponse.json({ 
+
+        return NextResponse.json({
           success: true,
-          message: `已更新用户 ${username} 的设置` 
+          message: `已更新用户 ${username} 的设置`
         });
       }
 
@@ -101,7 +115,7 @@ export async function POST(request: NextRequest) {
           auto_play: false,
           video_quality: 'auto'
         };
-        
+
         await storage.setUserSettings(username, {
           ...currentSettings,
           filter_adult_content: true,
@@ -109,10 +123,10 @@ export async function POST(request: NextRequest) {
           managed_by_admin: true,
           last_filter_change: new Date().toISOString()
         });
-        
-        return NextResponse.json({ 
+
+        return NextResponse.json({
           success: true,
-          message: `已强制开启用户 ${username} 的成人内容过滤` 
+          message: `已强制开启用户 ${username} 的成人内容过滤`
         });
       }
 
@@ -125,7 +139,7 @@ export async function POST(request: NextRequest) {
           auto_play: false,
           video_quality: 'auto'
         };
-        
+
         await storage.setUserSettings(username, {
           ...existingSettings,
           filter_adult_content: existingSettings.filter_adult_content ?? true,
@@ -137,10 +151,10 @@ export async function POST(request: NextRequest) {
           managed_by_admin: false,
           last_filter_change: new Date().toISOString()
         });
-        
-        return NextResponse.json({ 
+
+        return NextResponse.json({
           success: true,
-          message: `已允许用户 ${username} 自己管理过滤设置` 
+          message: `已允许用户 ${username} 自己管理过滤设置`
         });
       }
 

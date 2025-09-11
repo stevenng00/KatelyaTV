@@ -16,7 +16,7 @@ function getAuthInfoFromBrowserCookie(): {
 
   const cookies = document.cookie.split(';');
   const authCookie = cookies.find(cookie => cookie.trim().startsWith('auth='));
-  
+
   if (!authCookie) {
     return null;
   }
@@ -80,7 +80,17 @@ export default function UserManagement() {
       }
 
       const data = await response.json();
-      setUsers(data.users || []);
+      // Ensure users array is properly formatted and has all required properties
+      const safeUsers = (data.users || []).map((user: any) => ({
+        username: user.username || '',
+        role: user.role || 'user',
+        created_at: user.created_at || '',
+        filter_adult_content: user.filter_adult_content ?? true,
+        can_disable_filter: user.can_disable_filter ?? true,
+        managed_by_admin: user.managed_by_admin ?? false,
+        last_filter_change: user.last_filter_change || undefined
+      }));
+      setUsers(safeUsers);
     } catch (err) {
       setError(err instanceof Error ? err.message : '未知错误');
       console.error('加载用户列表失败:', err);
@@ -116,7 +126,7 @@ export default function UserManagement() {
 
       const data = await response.json();
       alert(data.message || '操作成功');
-      
+
       // 重新加载用户列表
       await loadUsers();
     } catch (err) {
@@ -150,7 +160,7 @@ export default function UserManagement() {
     return (
       <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md p-4">
         <div className="text-red-600 dark:text-red-400">{error}</div>
-        <button 
+        <button
           onClick={loadUsers}
           className="mt-2 text-sm text-red-600 dark:text-red-400 underline hover:no-underline"
         >
@@ -194,73 +204,84 @@ export default function UserManagement() {
               </tr>
             </thead>
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-              {users.map((user) => (
-                <tr key={user.username} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                        {user.username}
+              {users.map((user) => {
+                // Ensure all required properties exist with fallback values
+                const safeUser = {
+                  username: user.username || '',
+                  role: user.role || 'user',
+                  created_at: user.created_at || '',
+                  filter_adult_content: user.filter_adult_content ?? true,
+                  can_disable_filter: user.can_disable_filter ?? true,
+                  managed_by_admin: user.managed_by_admin ?? false,
+                  last_filter_change: user.last_filter_change || undefined
+                };
+
+                return (
+                  <tr key={safeUser.username} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                          {safeUser.username}
+                        </div>
+                        {safeUser.username === currentUser && (
+                          <span className="ml-2 px-2 py-1 text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded-full">
+                            当前用户
+                          </span>
+                        )}
                       </div>
-                      {user.username === currentUser && (
-                        <span className="ml-2 px-2 py-1 text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded-full">
-                          当前用户
-                        </span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                      user.role === 'owner'
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${safeUser.role === 'owner'
                         ? 'bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200'
                         : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300'
-                    }`}>
-                      {user.role === 'owner' ? '站长' : '用户'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        user.filter_adult_content
+                        }`}>
+                        {safeUser.role === 'owner' ? '站长' : '用户'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${safeUser.filter_adult_content
                           ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200'
                           : 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200'
-                      }`}>
-                        {user.filter_adult_content ? '已开启' : '已关闭'}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                    {user.managed_by_admin ? (
-                      <span className="text-orange-600 dark:text-orange-400">管理员控制</span>
-                    ) : user.can_disable_filter ? (
-                      <span className="text-green-600 dark:text-green-400">用户自主</span>
-                    ) : (
-                      <span className="text-gray-600 dark:text-gray-400">受限制</span>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    {user.role !== 'owner' && user.username !== currentUser && (
-                      <div className="flex space-x-2">
-                        {!user.filter_adult_content || !user.managed_by_admin ? (
-                          <button
-                            onClick={() => handleForceFilter(user.username)}
-                            className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
-                          >
-                            强制过滤
-                          </button>
-                        ) : null}
-                        {user.managed_by_admin || !user.can_disable_filter ? (
-                          <button
-                            onClick={() => handleAllowDisable(user.username)}
-                            className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300"
-                          >
-                            允许自主
-                          </button>
-                        ) : null}
+                          }`}>
+                          {safeUser.filter_adult_content ? '已开启' : '已关闭'}
+                        </span>
                       </div>
-                    )}
-                  </td>
-                </tr>
-              ))}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
+                      {safeUser.managed_by_admin ? (
+                        <span className="text-orange-600 dark:text-orange-400">管理员控制</span>
+                      ) : safeUser.can_disable_filter ? (
+                        <span className="text-green-600 dark:text-green-400">用户自主</span>
+                      ) : (
+                        <span className="text-gray-600 dark:text-gray-400">受限制</span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      {safeUser.role !== 'owner' && safeUser.username !== currentUser && (
+                        <div className="flex space-x-2">
+                          {!safeUser.filter_adult_content || !safeUser.managed_by_admin ? (
+                            <button
+                              onClick={() => handleForceFilter(safeUser.username)}
+                              className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                            >
+                              强制过滤
+                            </button>
+                          ) : null}
+                          {safeUser.managed_by_admin || !safeUser.can_disable_filter ? (
+                            <button
+                              onClick={() => handleAllowDisable(safeUser.username)}
+                              className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300"
+                            >
+                              允许自主
+                            </button>
+                          ) : null}
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

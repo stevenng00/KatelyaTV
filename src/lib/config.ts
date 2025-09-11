@@ -77,7 +77,9 @@ async function initConfig() {
       let userNames: string[] = [];
       if (storage && typeof (storage as any).getAllUsers === 'function') {
         try {
-          userNames = await (storage as any).getAllUsers();
+          const users = await (storage as any).getAllUsers();
+          // Extract usernames from User objects
+          userNames = users.map((user: any) => user.username || user);
         } catch (e) {
           console.error('获取用户列表失败:', e);
         }
@@ -324,7 +326,9 @@ export async function resetConfig() {
   let userNames: string[] = [];
   if (storage && typeof (storage as any).getAllUsers === 'function') {
     try {
-      userNames = await (storage as any).getAllUsers();
+      const users = await (storage as any).getAllUsers();
+      // Extract usernames from User objects
+      userNames = users.map((user: any) => user.username || user);
     } catch (e) {
       console.error('获取用户列表失败:', e);
     }
