@@ -13,8 +13,8 @@ const inter = Inter({ subsets: ['latin'] });
 
 // 动态生成 metadata，支持配置更新后的标题变化
 export async function generateMetadata(): Promise<Metadata> {
-  let siteName = process.env.SITE_NAME || 'KatelyaTV';
-  
+  let siteName = process.env.SITE_NAME || 'LnogvxeTV';
+
   try {
     // 只有在非 d1 和 upstash 存储类型时才尝试获取配置
     if (
@@ -57,7 +57,7 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  let siteName = process.env.SITE_NAME || 'KatelyaTV';
+  let siteName = process.env.SITE_NAME || 'LnogvxeTV';
   let announcement =
     process.env.ANNOUNCEMENT ||
     '本网站仅提供影视信息搜索服务，所有内容均来自第三方网站。本站不存储任何视频资源，不对任何内容的准确性、合法性、完整性负责。Link Me TG：@katelya77';
@@ -87,6 +87,11 @@ export default async function RootLayout({
   return (
     <html lang='zh-CN' suppressHydrationWarning>
       <head>
+        {/* 移除 favicon 和图标 */}
+        <link rel="icon" href="data:," />
+        <link rel="shortcut icon" href="data:," />
+        <link rel="apple-touch-icon" href="data:," />
+        
         {/* 将配置序列化后直接写入脚本，浏览器端可通过 window.RUNTIME_CONFIG 获取 */}
         {/* eslint-disable-next-line @next/next/no-sync-scripts */}
         <script
