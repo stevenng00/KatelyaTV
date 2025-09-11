@@ -25,9 +25,9 @@ export async function searchFromApi(
       apiBaseUrl + API_CONFIG.search.path + encodeURIComponent(query);
     const apiName = apiSite.name;
 
-    // 添加超时处理
+    // 添加超时处理 - 减少到 5 秒以适应 Edge Runtime
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 8000);
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
 
     const response = await fetch(apiUrl, {
       headers: API_CONFIG.search.headers,
@@ -114,7 +114,7 @@ export async function searchFromApi(
             const pageController = new AbortController();
             const pageTimeoutId = setTimeout(
               () => pageController.abort(),
-              8000
+              5000
             );
 
             const pageResponse = await fetch(pageUrl, {

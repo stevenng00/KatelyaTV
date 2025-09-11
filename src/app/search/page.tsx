@@ -30,13 +30,13 @@ function SearchPageClient() {
   const [isLoading, setIsLoading] = useState(false);
   const [showResults, setShowResults] = useState(false);
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
-  
+
   // 分组结果状态
   const [groupedResults, setGroupedResults] = useState<{
     regular: SearchResult[];
     adult: SearchResult[];
   } | null>(null);
-  
+
   // 分组标签页状态
   const [activeTab, setActiveTab] = useState<'regular' | 'adult'>('regular');
 
@@ -60,9 +60,8 @@ function SearchPageClient() {
     const map = new Map<string, SearchResult[]>();
     results.forEach((item) => {
       // 使用 title + year + type 作为键
-      const key = `${item.title.replaceAll(' ', '')}-${
-        item.year || 'unknown'
-      }-${item.episodes.length === 1 ? 'movie' : 'tv'}`;
+      const key = `${item.title.replaceAll(' ', '')}-${item.year || 'unknown'
+        }-${item.episodes.length === 1 ? 'movie' : 'tv'}`;
       const arr = map.get(key) || [];
       arr.push(item);
       map.set(key, arr);
@@ -169,30 +168,50 @@ function SearchPageClient() {
   const fetchSearchResults = async (query: string) => {
     try {
       setIsLoading(true);
-      
+
       // 获取用户认证信息
       const authInfo = getAuthInfoFromBrowserCookie();
-      
+
       // 构建请求头
       const headers: HeadersInit = {};
       if (authInfo?.username) {
         headers['Authorization'] = `Bearer ${authInfo.username}`;
       }
-      
+
       // 简化的搜索请求 - 成人内容过滤现在在API层面自动处理
       // 添加时间戳参数避免缓存问题
       const timestamp = Date.now();
-      const response = await fetch(
-        `/api/search?q=${encodeURIComponent(query.trim())}&t=${timestamp}`, 
-        { 
-          headers: {
-            ...headers,
-            'Cache-Control': 'no-cache, no-store, must-revalidate'
+
+      // 首先尝试 Edge Runtime API，如果超时则回退到 Node.js Runtime
+      let response: Response;
+      try {
+        response = await fetch(
+          `/api/search?q=${encodeURIComponent(query.trim())}&t=${timestamp}`,
+          {
+            headers: {
+              ...headers,
+              'Cache-Control': 'no-cache, no-store, must-revalidate'
+            },
+            signal: AbortSignal.timeout(12000) // 12 秒超时
           }
-        }
-      );
+        );
+      } catch (error) {
+        // 如果 Edge Runtime 超时，尝试 Node.js Runtime
+        console.warn('Edge runtime search failed, trying Node.js runtime:', error);
+        response = await fetch(
+          `/api/search/node?q=${encodeURIComponent(query.trim())}&t=${timestamp}`,
+          {
+            headers: {
+              ...headers,
+              'Cache-Control': 'no-cache, no-store, must-revalidate'
+            },
+            signal: AbortSignal.timeout(30000) // 30 秒超时
+          }
+        );
+      }
+
       const data = await response.json();
-      
+
       // 处理新的搜索结果格式
       if (data.regular_results || data.adult_results) {
         // 处理分组结果
@@ -213,7 +232,7 @@ function SearchPageClient() {
         setGroupedResults(null);
         setSearchResults(data.results || []);
       }
-      
+
       setShowResults(true);
     } catch (error) {
       setGroupedResults(null);
@@ -307,29 +326,27 @@ function SearchPageClient() {
                   </div>
                 </label>
               </div>
-              
+
               {/* 如果有分组结果且有成人内容，显示分组标签 */}
-              {groupedResults && groupedResults.adult.length > 0 && (
+              {groupedResults && groupedResults.adult.length == 0 && (
                 <div className="mb-6">
                   <div className="flex items-center justify-center mb-4">
                     <div className="inline-flex p-1 bg-gray-100 dark:bg-gray-800 rounded-lg">
                       <button
                         onClick={() => setActiveTab('regular')}
-                        className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                          activeTab === 'regular'
-                            ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm'
-                            : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-                        }`}
+                        className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${activeTab === 'regular'
+                          ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm'
+                          : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                          }`}
                       >
                         常规结果 ({groupedResults.regular.length})
                       </button>
                       <button
                         onClick={() => setActiveTab('adult')}
-                        className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                          activeTab === 'adult'
-                            ? 'bg-white dark:bg-gray-700 text-red-600 dark:text-red-400 shadow-sm'
-                            : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-                        }`}
+                        className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${activeTab === 'adult'
+                          ? 'bg-white dark:bg-gray-700 text-red-600 dark:text-red-400 shadow-sm'
+                          : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                          }`}
                       >
                         成人内容 ({groupedResults.adult.length})
                       </button>
@@ -352,8 +369,8 @@ function SearchPageClient() {
                   // 确定要显示的结果
                   let displayResults = searchResults;
                   if (groupedResults && groupedResults.adult.length > 0) {
-                    displayResults = activeTab === 'adult' 
-                      ? groupedResults.adult 
+                    displayResults = activeTab === 'adult'
+                      ? groupedResults.adult
                       : groupedResults.regular;
                   }
 
@@ -461,11 +478,10 @@ function SearchPageClient() {
       {/* 返回顶部悬浮按钮 */}
       <button
         onClick={scrollToTop}
-        className={`fixed bottom-20 md:bottom-6 right-6 z-[500] w-12 h-12 bg-green-500/90 hover:bg-green-500 text-white rounded-full shadow-lg backdrop-blur-sm transition-all duration-300 ease-in-out flex items-center justify-center group ${
-          showBackToTop
-            ? 'opacity-100 translate-y-0 pointer-events-auto'
-            : 'opacity-0 translate-y-4 pointer-events-none'
-        }`}
+        className={`fixed bottom-20 md:bottom-6 right-6 z-[500] w-12 h-12 bg-green-500/90 hover:bg-green-500 text-white rounded-full shadow-lg backdrop-blur-sm transition-all duration-300 ease-in-out flex items-center justify-center group ${showBackToTop
+          ? 'opacity-100 translate-y-0 pointer-events-auto'
+          : 'opacity-0 translate-y-4 pointer-events-none'
+          }`}
         aria-label='返回顶部'
       >
         <ChevronUp className='w-6 h-6 transition-transform group-hover:scale-110' />

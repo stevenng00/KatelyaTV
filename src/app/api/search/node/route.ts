@@ -5,8 +5,8 @@ import { addCorsHeaders, handleOptionsRequest } from '@/lib/cors';
 import { getStorage } from '@/lib/db';
 import { searchFromApi } from '@/lib/downstream';
 
-// 使用 Edge Runtime 以获得更好的性能，但注意 10 秒超时限制
-export const runtime = 'edge';
+// 使用 Node.js Runtime 以获得更长的执行时间（60 秒）
+export const runtime = 'nodejs';
 
 // 处理OPTIONS预检请求（OrionTV客户端需要）
 export async function OPTIONS() {
@@ -85,52 +85,37 @@ export async function GET(request: Request) {
       return addCorsHeaders(response);
     }
 
-    // 添加整体超时控制，确保在 Edge Runtime 的 10 秒限制内完成
-    const overallController = new AbortController();
-    const overallTimeoutId = setTimeout(() => overallController.abort(), 9000); // 留 1 秒缓冲
+    // Node.js Runtime 有更长的超时时间，可以搜索更多源
+    const searchPromises = availableSites.map((site) =>
+      searchFromApi(site, query).catch(error => {
+        // 单个源失败不影响其他源
+        console.warn(`Search failed for site ${site.name}:`, error);
+        return [];
+      })
+    );
 
-    try {
-      // 限制并发搜索数量以避免超时，优先搜索前几个源
-      const maxConcurrentSearches = 6; // 限制并发数量
-      const sitesToSearch = availableSites.slice(0, maxConcurrentSearches);
+    // 使用 Promise.allSettled 确保即使部分失败也能返回结果
+    const searchResults = await Promise.allSettled(searchPromises);
+    const allResults = searchResults
+      .filter((result): result is PromiseFulfilledResult<any[]> => result.status === 'fulfilled')
+      .flatMap(result => result.value);
 
-      // 搜索所有可用的资源站（已根据用户设置动态过滤）
-      const searchPromises = sitesToSearch.map((site) =>
-        searchFromApi(site, query).catch(error => {
-          // 单个源失败不影响其他源
-          console.warn(`Search failed for site ${site.name}:`, error);
-          return [];
-        })
-      );
-
-      // 使用 Promise.allSettled 确保即使部分失败也能返回结果
-      const searchResults = await Promise.allSettled(searchPromises);
-      const allResults = searchResults
-        .filter((result): result is PromiseFulfilledResult<any[]> => result.status === 'fulfilled')
-        .flatMap(result => result.value);
-
-      clearTimeout(overallTimeoutId);
-
-      // 所有结果都作为常规结果返回，因为成人内容源已经在源头被过滤掉了
-      const cacheTime = await getCacheTime();
-      const response = NextResponse.json(
-        {
-          regular_results: allResults,
-          adult_results: [] // 始终为空，因为成人内容在源头就被过滤了
+    // 所有结果都作为常规结果返回，因为成人内容源已经在源头被过滤掉了
+    const cacheTime = await getCacheTime();
+    const response = NextResponse.json(
+      {
+        regular_results: allResults,
+        adult_results: [] // 始终为空，因为成人内容在源头就被过滤了
+      },
+      {
+        headers: {
+          'Cache-Control': `public, max-age=${cacheTime}, s-maxage=${cacheTime}`,
+          'CDN-Cache-Control': `public, s-maxage=${cacheTime}`,
+          'Vercel-CDN-Cache-Control': `public, s-maxage=${cacheTime}`,
         },
-        {
-          headers: {
-            'Cache-Control': `public, max-age=${cacheTime}, s-maxage=${cacheTime}`,
-            'CDN-Cache-Control': `public, s-maxage=${cacheTime}`,
-            'Vercel-CDN-Cache-Control': `public, s-maxage=${cacheTime}`,
-          },
-        }
-      );
-      return addCorsHeaders(response);
-    } catch (overallError) {
-      clearTimeout(overallTimeoutId);
-      throw overallError;
-    }
+      }
+    );
+    return addCorsHeaders(response);
   } catch (error) {
     console.error('Search API error:', error);
     const response = NextResponse.json(
