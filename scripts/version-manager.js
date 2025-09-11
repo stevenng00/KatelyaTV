@@ -82,10 +82,10 @@ function getVersionTxt() {
 function updateVersion(type, preRelease = null) {
   const currentVersion = getCurrentVersion();
   const [major, minor, patch] = currentVersion.split('.').map(Number);
-
+  
   let newVersion;
   let newVersionTxt;
-
+  
   switch (type) {
     case VERSION_TYPES.MAJOR:
       newVersion = `${major + 1}.0.0`;
@@ -108,16 +108,16 @@ function updateVersion(type, preRelease = null) {
     default:
       error(`不支持的版本类型: ${type}`);
   }
-
+  
   // 生成新的版本时间戳
   const now = new Date();
   newVersionTxt = now.getFullYear().toString() +
-    String(now.getMonth() + 1).padStart(2, '0') +
-    String(now.getDate()).padStart(2, '0') +
-    String(now.getHours()).padStart(2, '0') +
-    String(now.getMinutes()).padStart(2, '0') +
-    String(now.getSeconds()).padStart(2, '0');
-
+                  String(now.getMonth() + 1).padStart(2, '0') +
+                  String(now.getDate()).padStart(2, '0') +
+                  String(now.getHours()).padStart(2, '0') +
+                  String(now.getMinutes()).padStart(2, '0') +
+                  String(now.getSeconds()).padStart(2, '0');
+  
   return { newVersion, newVersionTxt };
 }
 
@@ -148,7 +148,7 @@ function updateChangelog(newVersion, type) {
   try {
     const changelog = fs.readFileSync(CHANGELOG_MD, 'utf8');
     const today = new Date().toISOString().split('T')[0];
-
+    
     // 创建新版本条目
     const newEntry = `## [${newVersion}] - ${today}
 
@@ -179,10 +179,10 @@ docker run -d --name katelyatv -p 3000:3000 --env PASSWORD=your_password ghcr.io
 查看 [CHANGELOG.md](CHANGELOG.md) 了解详细的更新历史。
 
 ### 🔗 相关链接
-- [项目主页](https://github.com/katelya77/LnogvxeTV)
-- [在线演示](https://lnogvxetv.vercel.app)
-- [问题反馈](https://github.com/katelya77/LnogvxeTV/issues)
-- [功能建议](https://github.com/katelya77/LnogvxeTV/discussions)
+- [项目主页](https://github.com/katelya77/KatelyaTV)
+- [在线演示](https://katelyatv.vercel.app)
+- [问题反馈](https://github.com/katelya77/KatelyaTV/issues)
+- [功能建议](https://github.com/katelya77/KatelyaTV/discussions)
 
 `;
 
@@ -191,7 +191,7 @@ docker run -d --name katelyatv -p 3000:3000 --env PASSWORD=your_password ghcr.io
       '## [未发布]',
       `## [未发布]\n\n### 计划中\n- 弹幕系统支持\n- 字幕文件支持\n- 下载功能\n- 社交分享功能\n- 用户评分系统\n\n${newEntry}`
     );
-
+    
     fs.writeFileSync(CHANGELOG_MD, updatedChangelog);
     success('CHANGELOG.md 已更新');
   } catch (err) {
@@ -258,7 +258,7 @@ ${colors.bright}MoonTV 版本管理脚本${colors.reset}
 function showVersionInfo() {
   const packageVersion = getCurrentVersion();
   const versionTxt = getVersionTxt();
-
+  
   console.log(`
 ${colors.bright}当前版本信息:${colors.reset}
 
@@ -273,29 +273,29 @@ ${colors.bright}当前版本信息:${colors.reset}
 // 主函数
 function main() {
   const args = process.argv.slice(2);
-
+  
   if (args.length === 0 || args.includes('help') || args.includes('--help') || args.includes('-h')) {
     showHelp();
     return;
   }
-
+  
   if (args.includes('show')) {
     showVersionInfo();
     return;
   }
-
+  
   const command = args[0];
   const options = {
     noCommit: args.includes('--no-commit'),
     noTag: args.includes('--no-tag'),
     noChangelog: args.includes('--no-changelog')
   };
-
+  
   // 验证命令
   if (!Object.values(VERSION_TYPES).includes(command)) {
     error(`无效的命令: ${command}`);
   }
-
+  
   // 获取预发布标识符
   let preRelease = null;
   if (command === VERSION_TYPES.PRE) {
@@ -304,35 +304,35 @@ function main() {
     }
     preRelease = args[1];
   }
-
+  
   info(`开始更新版本...`);
   info(`当前版本: ${getCurrentVersion()}`);
-
+  
   // 更新版本
   const { newVersion, newVersionTxt } = updateVersion(command, preRelease);
   info(`新版本: ${newVersion}`);
-
+  
   // 更新文件
   updatePackageJson(newVersion);
   updateVersionTxt(newVersionTxt);
-
+  
   if (!options.noChangelog) {
     updateChangelog(newVersion, command);
   }
-
+  
   // Git 操作
   if (!options.noCommit) {
     commitChanges(newVersion);
   }
-
+  
   if (!options.noTag) {
     createGitTag(newVersion);
   }
-
+  
   success(`\n🎉 版本更新完成!`);
   success(`新版本: ${newVersion}`);
   success(`时间戳: ${newVersionTxt}`);
-
+  
   if (!options.noCommit) {
     info('提示: 使用 "git push --tags" 推送标签到远程仓库');
   }

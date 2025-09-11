@@ -1,8 +1,8 @@
 version: '3.8'
 
 services:
-  # LnogvxeTV 应用服务
-  lnogvxetv:
+  # KatelyaTV 应用服务
+  katelyatv:
     image: ghcr.io/katelya77/katelyatv:latest
     ports:
       - "3000:3000"

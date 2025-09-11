@@ -1,8 +1,8 @@
 version: '3.8'
 
 services:
-  # LnogvxeTV 应用服务（本地构建版本）
-  lnogvxetv:
+  # KatelyaTV 应用服务（本地构建版本）
+  katelyatv:
     build: .
     ports:
       - "3000:3000"

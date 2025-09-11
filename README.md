@@ -1,7 +1,7 @@
 <div align="center">
-  <img src="public/logo.png" alt="LnogvxeTV Logo" width="128" />
+  <img src="public/logo.png" alt="KatelyaTV Logo" width="128" />
 
-  <h1>LnogvxeTV</h1>
+  <h1>KatelyaTV</h1>
   <p><strong>跨平台 · 聚合搜索 · 即开即用 · 自托管影视聚合播放器</strong></p>
   <p>基于 <code>Next.js 14</code> · <code>TypeScript</code> · <code>Tailwind CSS</code> · 多源聚合 / 播放记录 / 收藏同步 / 跳过片头片尾 / PWA</p>
   
@@ -100,8 +100,8 @@ docker run -d \
 
 ```bash
 # 1. 下载配置文件
-curl -O https://raw.githubusercontent.com/katelya77/LnogvxeTV/main/docker-compose.redis.yml
-curl -O https://raw.githubusercontent.com/katelya77/LnogvxeTV/main/.env.redis.example
+curl -O https://raw.githubusercontent.com/katelya77/KatelyaTV/main/docker-compose.redis.yml
+curl -O https://raw.githubusercontent.com/katelya77/KatelyaTV/main/.env.redis.example
 
 # 2. 配置环境变量
 cp .env.redis.example .env
@@ -133,8 +133,8 @@ docker compose -f docker-compose.redis.yml up -d
 
 ```bash
 # 1. 下载配置文件
-curl -O https://raw.githubusercontent.com/katelya77/LnogvxeTV/main/docker-compose.kvrocks.yml
-curl -O https://raw.githubusercontent.com/katelya77/LnogvxeTV/main/.env.kvrocks.example
+curl -O https://raw.githubusercontent.com/katelya77/KatelyaTV/main/docker-compose.kvrocks.yml
+curl -O https://raw.githubusercontent.com/katelya77/KatelyaTV/main/.env.kvrocks.example
 
 # 2. 配置环境变量
 cp .env.kvrocks.example .env
@@ -166,7 +166,7 @@ docker compose -f docker-compose.kvrocks.yml up -d
 
 #### 基础部署
 
-1. **Fork 项目** → [GitHub 仓库](https://github.com/katelya77/LnogvxeTV)
+1. **Fork 项目** → [GitHub 仓库](https://github.com/katelya77/KatelyaTV)
 2. **部署到 Vercel**：
    - 登录 [Vercel](https://vercel.com/)
    - 导入刚 Fork 的仓库
@@ -205,7 +205,7 @@ NEXT_PUBLIC_ENABLE_REGISTER=true
 
 #### 快速部署
 
-1. **Fork 项目** → [GitHub 仓库](https://github.com/katelya77/LnogvxeTV)
+1. **Fork 项目** → [GitHub 仓库](https://github.com/katelya77/KatelyaTV)
 2. **创建 Pages 项目**：
 
    - 登录 [Cloudflare Dashboard](https://dash.cloudflare.com/)
@@ -630,7 +630,7 @@ GET /api/admin/analytics
 
 配合 [OrionTV](https://github.com/zimplexing/OrionTV) 在 Android TV 上使用：
 
-1. 在 OrionTV 中填入 LnogvxeTV 部署地址
+1. 在 OrionTV 中填入 KatelyaTV 部署地址
 2. 输入设置的 PASSWORD
 3. 即可在电视上观看
 
@@ -703,7 +703,7 @@ DATE=$(date +%Y%m%d_%H%M%S)
 BACKUP_DIR="backups/$DATE"
 mkdir -p $BACKUP_DIR
 
-echo "开始备份 LnogvxeTV 数据..."
+echo "开始备份 KatelyaTV 数据..."
 
 # 备份配置文件
 cp config.json $BACKUP_DIR/config.json
@@ -952,17 +952,17 @@ server {
 
 **官方资源**：
 
-- [📦 GitHub 仓库](https://github.com/katelya77/LnogvxeTV)
-- [🐳 Docker Hub](https://hub.docker.com/r/katelya77/lnogvxetv)
-- [📊 GitHub Container Registry](https://github.com/katelya77/LnogvxeTV/pkgs/container/lnogvxetv)
-- [📋 版本发布页](https://github.com/katelya77/LnogvxeTV/releases)
+- [📦 GitHub 仓库](https://github.com/katelya77/KatelyaTV)
+- [🐳 Docker Hub](https://hub.docker.com/r/katelya77/katelyatv)
+- [📊 GitHub Container Registry](https://github.com/katelya77/KatelyaTV/pkgs/container/katelyatv)
+- [📋 版本发布页](https://github.com/katelya77/KatelyaTV/releases)
 
 **社区支持**：
 
-- [💬 Discussions 讨论区](https://github.com/katelya77/LnogvxeTV/discussions)
-- [🐛 Issues 问题反馈](https://github.com/katelya77/LnogvxeTV/issues)
-- [📖 Wiki 知识库](https://github.com/katelya77/LnogvxeTV/wiki)
-- [💡 Feature Requests](https://github.com/katelya77/LnogvxeTV/issues?q=label%3Aenhancement)
+- [💬 Discussions 讨论区](https://github.com/katelya77/KatelyaTV/discussions)
+- [🐛 Issues 问题反馈](https://github.com/katelya77/KatelyaTV/issues)
+- [📖 Wiki 知识库](https://github.com/katelya77/KatelyaTV/wiki)
+- [💡 Feature Requests](https://github.com/katelya77/KatelyaTV/issues?q=label%3Aenhancement)
 
 **在线演示**：
 
@@ -984,8 +984,8 @@ server {
 
 ```bash
 # 本地开发环境搭建
-git clone https://github.com/katelya77/LnogvxeTV.git
-cd LnogvxeTV
+git clone https://github.com/katelya77/KatelyaTV.git
+cd KatelyaTV
 
 # 安装依赖
 pnpm install
@@ -1060,15 +1060,15 @@ pnpm format
 
 ### 💝 支持项目发展
 
-如果 LnogvxeTV 对您有帮助，欢迎通过以下方式支持项目：
+如果 KatelyaTV 对您有帮助，欢迎通过以下方式支持项目：
 
 **免费支持**：
 
-- ⭐ [GitHub 点 Star](https://github.com/katelya77/LnogvxeTV/stargazers)
-- 🍴 [Fork 项目](https://github.com/katelya77/LnogvxeTV/fork)
-- 💬 [参与讨论](https://github.com/katelya77/LnogvxeTV/discussions)
-- 📖 [完善文档](https://github.com/katelya77/LnogvxeTV/tree/main/docs)
-- 🔗 [推荐朋友](https://github.com/katelya77/LnogvxeTV)
+- ⭐ [GitHub 点 Star](https://github.com/katelya77/KatelyaTV/stargazers)
+- 🍴 [Fork 项目](https://github.com/katelya77/KatelyaTV/fork)
+- 💬 [参与讨论](https://github.com/katelya77/KatelyaTV/discussions)
+- 📖 [完善文档](https://github.com/katelya77/KatelyaTV/tree/main/docs)
+- 🔗 [推荐朋友](https://github.com/katelya77/KatelyaTV)
 
 **赞助支持**：
 
